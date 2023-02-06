@@ -26,52 +26,73 @@ namespace UmbAPI.Controllers
         [HttpGet("all")]
         public IActionResult GetEmployees()
         {
-            var employees = _repo.GetEmployees();
+            try
+            {
+                var employees = _repo.GetEmployees();
 
-            return Ok(employees);
+                return Ok(employees);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }            
         }
 
         [Authorize(Roles = "Administrator,Employee")]
         [HttpPost("GetEmployeesByDepartment")]
         public IActionResult GetDepartmentEmployees([FromBody] string department)
         {
-            if (string.IsNullOrEmpty(department))
-                return BadRequest(ModelState);
+            try
+            {
+                if (string.IsNullOrEmpty(department))
+                    return BadRequest(ModelState);
 
-            var employees = _repo.GetEmployeesByDepartment(department);
+                var employees = _repo.GetEmployeesByDepartment(department);
 
-            return Ok(employees);
+                return Ok(employees);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }            
         }
 
         [Authorize(Roles = "Administrator")]
         [HttpPost("Create")]
         public IActionResult AddEmployee([FromBody] EmployeeDTO employeeDto)
         {
-            if (employeeDto == null)
-                return BadRequest(ModelState);
-
-            Department? dept = null;
-            var existingEmployee = _repo.GetEmployee(employeeDto.EmployeeNumber, employeeDto.Telephone);
-
-            if (existingEmployee != null)
+            try
             {
-                ModelState.AddModelError("Error", "Employee already exists");
-                return BadRequest(ModelState);
-            }
+                if (employeeDto == null)
+                    return BadRequest(ModelState);
 
-            if (!string.IsNullOrEmpty(employeeDto.DepartmentName))
-            {
-                dept = _repo.GetDepartment(employeeDto.DepartmentName);
+                Department? dept = null;
+                var existingEmployee = _repo.GetEmployee(employeeDto.EmployeeNumber, employeeDto.Telephone);
 
-                if (dept == null)
+                if (existingEmployee != null)
                 {
-                    ModelState.AddModelError("Error", "Department does not exist");
+                    ModelState.AddModelError("Error", "Employee already exists");
                     return BadRequest(ModelState);
                 }
-            }
-            _repo.CreateEmployee(employeeDto);
 
-            return Ok("Employee successfully created");
+                if (!string.IsNullOrEmpty(employeeDto.DepartmentName))
+                {
+                    dept = _repo.GetDepartment(employeeDto.DepartmentName);
+
+                    if (dept == null)
+                    {
+                        ModelState.AddModelError("Error", "Department does not exist");
+                        return BadRequest(ModelState);
+                    }
+                }
+                _repo.CreateEmployee(employeeDto);
+
+                return Ok("Employee successfully created");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }            
         }
     }
 }
