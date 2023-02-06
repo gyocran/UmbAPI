@@ -8,11 +8,10 @@ namespace UmbAPI.Helpers
     {
         public MappingProfiles() 
         {
-            CreateMap<Employee, EmployeeDto>().ReverseMap();
-            CreateMap<Department, DepartmentDto>().ReverseMap();
-            //CreateMap<EmployeeType, EmployeeTypeDto>().ReverseMap();
-            //CreateMap<Employee, EmployeeDto>().ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => src.Department.DepartmentName)).ReverseMap();
-            //CreateMap<EmployeeDto, Employee>().ForMember(dest => dest.Department.DepartmentName, opt => opt.MapFrom(src => src.DepartmentName)).ReverseMap();
+            CreateMap<Employee, EmployeeDTO>()
+                .ForMember(d => d.DepartmentName, opt => opt.MapFrom(src => src.Department.DepartmentName))
+                .ReverseMap();
+            CreateMap<Department, DepartmentDTO>().ReverseMap();
         }
     }
 }

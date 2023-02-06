@@ -3,9 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UmbAPI.Data;
 using UmbAPI.DTO;
+using UmbAPI.Interfaces;
 using UmbAPI.Models;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace UmbAPI.Controllers
 {
@@ -13,78 +12,67 @@ namespace UmbAPI.Controllers
     [ApiController]
     public class DepartmentAPIController : ControllerBase
     {
-        private readonly HumanResourcesContext _context;
-        private readonly IMapper mapper;
+        private readonly IHumanResourcesRepo _repo;
 
-        public DepartmentAPIController(HumanResourcesContext context, IMapper mapper)
+        public DepartmentAPIController(IHumanResourcesRepo repo)
         {
-            _context = context;
-            this.mapper = mapper;
+            _repo = repo;
         }
 
         [Authorize(Roles = "Administrator")]
-        [HttpGet("all")]
+        [HttpGet("All")]
         public IActionResult GetDepartments()
         {
-            var departments = mapper.Map<List<DepartmentDto>>(_context.Departments);
+            var departments = _repo.GetDepartments();
 
             return Ok(departments);
         }
 
         [Authorize(Roles = "Administrator")]
         [HttpPost("Create")]
-        public IActionResult AddDepartment([FromBody] DepartmentDto departmentDto)
+        public IActionResult AddDepartment([FromBody] DepartmentDTO departmentDto)
         {
             if (departmentDto == null)
                 return BadRequest(ModelState);
 
-            var existingDepartment = _context.Departments.ToList().Where(c => c.DepartmentName.Trim().ToUpper() == departmentDto.DepartmentName.ToUpper()).FirstOrDefault();
+            var exists = _repo.DepartmentExists(departmentDto);
 
-            if (existingDepartment != null)
+            if (exists)
             {
-                ModelState.AddModelError("", "Department already exists");
+                ModelState.AddModelError("Error", "Department already exists");
                 return BadRequest(ModelState);
             }
 
-            var department = new Department
-            {
-                DepartmentName = departmentDto.DepartmentName
-            };
-
-            //var employee = mapper.Map<Employee>(employeeDto);
-            _context.Departments.Add(department);
-            _context.SaveChangesAsync();
+            _repo.CreateDepartment(departmentDto);
             return Ok("Department successfully created");
         }
 
         [Authorize(Roles = "Administrator")]
-        [HttpPost("assigndepartment")]
-        public IActionResult AssignEmployeeToDepartment([FromBody] DepartmentAssignmentDto assignment)
+        [HttpPost("AssignDepartment")]
+        public IActionResult AssignEmployeeToDepartment([FromBody] DepartmentAssignmentDTO assignment)
         {
             if (assignment == null)
                 return BadRequest(ModelState);
 
-            var existingDepartment = _context.Departments.ToList().Where(c => c.DepartmentName.Trim().ToUpper() == assignment.DepartmentName.ToUpper()).FirstOrDefault();
+            var dept = _repo.GetDepartment(assignment.DepartmentName);
 
-            if (existingDepartment == null)
+            if (dept == null)
             {
-                ModelState.AddModelError("", "Department does not exist");
+                ModelState.AddModelError("Error", "Department does not exist");
                 return BadRequest(ModelState);
             }
 
-            var existingEmployee = _context.Employees.ToList().Where(c => c.EmployeeNumber.Trim().ToUpper() == assignment.EmployeeNumber.ToUpper()).FirstOrDefault();
+            var employee = _repo.GetEmployee(assignment.EmployeeNumber, null);
 
-            if (existingEmployee == null)
+            if (employee == null)
             {
-                ModelState.AddModelError("", "Employee does not exist");
+                ModelState.AddModelError("Error", "Employee does not exist");
                 return BadRequest(ModelState);
             }
 
-            existingEmployee.Department = existingDepartment;
+            employee.Department = dept;
 
-            //var employee = mapper.Map<Employee>(employeeDto);
-            _context.Update(existingEmployee);
-            _context.SaveChangesAsync();
+            _repo.UpdateEmployee(employee);
             return Ok("Department successfully assigned to employee");
         }
     }

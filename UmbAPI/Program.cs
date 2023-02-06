@@ -1,16 +1,17 @@
+using Azure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using UmbAPI.Data;
+using UmbAPI.Interfaces;
+using UmbAPI.Repos;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
-//builder.Services.AddRazorPages();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
         options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
@@ -26,11 +27,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddSwaggerGen();
-//builder.Services.AddMvc();
 builder.Services.AddDbContext<HumanResourcesContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
+builder.Services.AddScoped<IHumanResourcesRepo, HumanResourcesRepo>();
 
 var app = builder.Build();
 
@@ -41,17 +42,8 @@ var app = builder.Build();
     app.UseSwaggerUI();
 //}
 app.UseHttpsRedirection();
-//app.UseStaticFiles();
-//app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
-//app.UseEndpoints(endpoints =>
-//    {
-//        endpoints.MapControllers();
-//        endpoints.MapRazorPages();
-//    });
-
 app.MapControllers();
-//app.MapRazorPages();
 
 app.Run();
